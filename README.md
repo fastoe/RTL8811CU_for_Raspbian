@@ -19,4 +19,4 @@ sudo modprobe 8821cu
 sudo reboot
 ```
 
-Enjoy WiFi!
+Enjoy!
