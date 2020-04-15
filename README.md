@@ -1,6 +1,6 @@
-# Realtek 8812BU driver for Raspbian
+# Realtek 8811CU driver for Raspbian
 
-Driver for 802.11ac USB adapter with RTL8811CU chipset, only STA/Monitor mode is supported, no AP mode.
+Driver for 802.11ac USB adapter with RTL8811CU or RTL8821CU chipset, only STA/Monitor mode is supported, no AP mode.
 
 Currently tested with Linux kernel 4.19.97-v7+ on Raspberry Pi 3 B+.
 
