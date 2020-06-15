@@ -1,5 +1,8 @@
 # Realtek 8811CU driver for Raspbian
 
+A few known wireless cards that use this driver include:
+* [Fastoe AC650 USB Wi-Fi Adapter](https://amzn.to/2KR1Lxi)
+
 Driver for 802.11ac USB adapter with RTL8811CU or RTL8821CU chipset, only STA/Monitor mode is supported, no AP mode.
 
 Currently tested with Linux kernel 4.19.97-v7+ on Raspberry Pi 3 B+.
