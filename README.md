@@ -61,5 +61,6 @@ sudo ln -s /lib/modules/$(uname -r)/build/arch/arm /lib/modules/$(uname -r)/buil
 sudo cp /lib/modules/$(uname -r)/build/arch/arm64/Makefile /lib/modules/$(uname -r)/build/arch/arm64/Makefile.$(date +%Y%m%d%H%M)
 sudo sed -i 's/-mgeneral-regs-only//' /lib/modules/$(uname -r)/build/arch/arm64/Makefile
 ```
+then, re-make again.
 
 Enjoy!
