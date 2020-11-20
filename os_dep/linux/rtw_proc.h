@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2013 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #ifndef __RTW_PROC_H__
 #define __RTW_PROC_H__
 
@@ -25,6 +20,13 @@
 
 #define RTW_PROC_HDL_TYPE_SEQ	0
 #define RTW_PROC_HDL_TYPE_SSEQ	1
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0))
+#define HAVE_PROC_OPS_STRUCT
+typedef struct proc_ops rtw_proc_op_t;
+#else
+typedef struct file_operations rtw_proc_op_t;
+#endif
 
 struct rtw_proc_hdl {
 	char *name;
