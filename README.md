@@ -8,6 +8,7 @@ Driver for 802.11ac USB adapter with RTL8811CU or RTL8821CU chipset, only STA/Mo
 Currently tested with Linux RaspberryPi 5.4.51-v7l+/4.19.118-v7+/4.19.97-v7+ on:
 - Raspberry Pi 4 B
 - Raspberry Pi Zero W
+- Raspberry Pi Zero v1.3 (5.10.17-v7+)
 - Raspberry Pi 3 B+
 - Raspberry Pi 2 B
 
