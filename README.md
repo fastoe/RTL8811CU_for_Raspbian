@@ -25,14 +25,14 @@ sudo modprobe 8821cu
 sudo reboot
 ```
 
-If fails to compile like this:
+If fails to compile like `/lib/modules/5.x.x-v7+/build: No such file or directory.  Stop`:
 ```
 pi@raspberrypi:~/RTL8812BU_for_Raspbian $ make
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/RTL8812BU_for_Raspbian  modules
 make[1]: *** /lib/modules/5.4.51-v7+/build: No such file or directory.  Stop.
 make: *** [Makefile:2284: modules] Error 2
 ```
-please run the `rpi-source` command to install the kernel headers for kernel 5.4.51-v7+:
+please run the `rpi-source` command to install the kernel headers for kernel:
 ```
 sudo apt install -y bc git flex bison libssl-dev
 sudo wget https://raw.githubusercontent.com/RPi-Distro/rpi-source/master/rpi-source -O /usr/local/bin/rpi-source && sudo chmod +x /usr/local/bin/rpi-source && /usr/local/bin/rpi-source -q --tag-update
