@@ -34,7 +34,7 @@ make: *** [Makefile:2284: modules] Error 2
 ```
 please run the `rpi-source` command to install the kernel headers for kernel:
 ```
-sudo apt install -y bc git flex bison libssl-dev
+sudo apt install -y bc git flex bison libssl-dev libncurses5-dev
 sudo wget https://raw.githubusercontent.com/RPi-Distro/rpi-source/master/rpi-source -O /usr/local/bin/rpi-source && sudo chmod +x /usr/local/bin/rpi-source && /usr/local/bin/rpi-source -q --tag-update
 rpi-source
 ```
