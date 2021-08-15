@@ -33,30 +33,28 @@ A few known wireless cards that use this driver include:
 To build, you have to retrieve source and run `make`, do following:
 
 - For Raspberry Pi OS 5.10 kernel, clone the v5.8.1 branch:
-
-```bash
-sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
-git clone -b v5.8.1 https://github.com/fastoe/RTL8811CU_for_Raspbian
-cd RTL8811CU_for_Raspbian
-make
-sudo make install
-sudo modprobe 8821cu
-sudo reboot
-```
+  ```bash
+  sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+  git clone -b v5.8.1 https://github.com/fastoe/RTL8811CU_for_Raspbian
+  cd RTL8811CU_for_Raspbian
+  make
+  sudo make install
+  sudo modprobe 8821cu
+  sudo reboot
+  ```
 
 - For Raspberry Pi OS 5.4 or earlier kernel:
+  ```bash
+  sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+  git clone https://github.com/fastoe/RTL8811CU_for_Raspbian
+  cd RTL8811CU_for_Raspbian
+  make
+  sudo make install
+  sudo modprobe 8821cu
+  sudo reboot
+  ```
 
-```bash
-sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
-git clone https://github.com/fastoe/RTL8811CU_for_Raspbian
-cd RTL8811CU_for_Raspbian
-make
-sudo make install
-sudo modprobe 8821cu
-sudo reboot
-```
-
-If fails to compile like `/lib/modules/5.x.x-v7+/build: No such file or directory.  Stop`:
+### If fails to compile like `/lib/modules/5.x.x-v7+/build: No such file or directory.  Stop`:
 ```
 pi@raspberrypi:~/RTL8812BU_for_Raspbian $ make
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/RTL8812BU_for_Raspbian  modules
@@ -71,7 +69,7 @@ rpi-source
 ```
 then, re-make again.
 
-If fails to compile like this:
+### If fails to compile like this:
 ```
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/rtl8821CU  modules
 make[1]: Entering directory '/home/pi/linux-f2f7e4b23d8788e96f81a7522b2f703e51c53e70'
