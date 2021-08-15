@@ -11,7 +11,7 @@ A few known wireless cards that use this driver include:
 * EDUP EP-AC1635
 * Cudy WU700
 
-### Tested with Raspberry Pi OS (32 bit):
+### Tested with Raspberry Pi OS (32-bit):
 - [Kernel 5.10.17](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-05-28/)
 - [Kernel 5.4.83](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-01-12/)
 - [Kernel 5.4.79](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2020-12-04/)
@@ -81,13 +81,13 @@ make[1]: Leaving directory '/home/pi/linux-f2f7e4b23d8788e96f81a7522b2f703e51c53
 make: *** [Makefile:2214: modules] Error 2
 ```
 please run the following command:
-- for AArch32 (32 bit)
+- for AArch32 (32-bit)
 ```
 sudo cp /lib/modules/$(uname -r)/build/arch/arm/Makefile /lib/modules/$(uname -r)/build/arch/arm/Makefile.$(date +%Y%m%d%H%M)
 sudo sed -i 's/-msoft-float//' /lib/modules/$(uname -r)/build/arch/arm/Makefile
 sudo ln -s /lib/modules/$(uname -r)/build/arch/arm /lib/modules/$(uname -r)/build/arch/armv7l
 ```
-- for AArch64 (64 bit)
+- for AArch64 (64-bit)
 ```
 sudo cp /lib/modules/$(uname -r)/build/arch/arm64/Makefile /lib/modules/$(uname -r)/build/arch/arm64/Makefile.$(date +%Y%m%d%H%M)
 sudo sed -i 's/-mgeneral-regs-only//' /lib/modules/$(uname -r)/build/arch/arm64/Makefile
