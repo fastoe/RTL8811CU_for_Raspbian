@@ -1,5 +1,7 @@
 # Realtek 8811CU driver for Raspberry Pi OS
 
+Driver for 802.11ac USB adapter with RTL8811CU chipset, only STA/Monitor mode is supported, no AP mode.
+
 A few known wireless cards that use this driver include:
 * [Fastoe AC650 USB Wi-Fi Adapter](https://amzn.to/2KR1Lxi)
 * TOTOLINK A650UA v3
@@ -9,13 +11,22 @@ A few known wireless cards that use this driver include:
 * EDUP EP-AC1635
 * Cudy WU700
 
-Driver for 802.11ac USB adapter with RTL8811CU chipset, only STA/Monitor mode is supported, no AP mode.
+## Tested with Raspberry Pi OS (32 bit):
+- Kernel 5.10.17
+- Kernel 5.4.83
+- Kernel 5.4.79
+- Kernel 5.4.51
+- Kernel 4.19.118
+- Kernel 4.19.97
+- Kernel 4.19.50
 
-Currently tested with Linux RaspberryPi 5.4.51-v7l+/4.19.118-v7+/4.19.97-v7+ on:
+## Tested Raspberry Pi Devices:
 - Raspberry Pi 400
-- Raspberry Pi 4 B
+- Raspberry Pi 4 Model B 2G
+- Raspberry Pi 4 Model B 4G
+- Raspberry Pi 4 Model B 8G
 - Raspberry Pi Zero W
-- Raspberry Pi Zero v1.3 (5.10.17-v7+)
+- Raspberry Pi Zero v1.3
 - Raspberry Pi 3 B+
 - Raspberry Pi 2 B
 
