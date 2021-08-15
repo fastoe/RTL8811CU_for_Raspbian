@@ -30,8 +30,10 @@ u8 rtw_set_tim_ie(u8 dtim_cnt, u8 dtim_period
 /* void update_BCNTIM(_adapter *padapter); */
 void rtw_add_bcn_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 index, u8 *data, u8 len);
 void rtw_remove_bcn_ie(_adapter *padapter, WLAN_BSSID_EX *pnetwork, u8 index);
-void _update_beacon(_adapter *padapter, u8 ie_id, u8 *oui, u8 tx, const char *tag);
-#define update_beacon(adapter, ie_id, oui, tx) _update_beacon((adapter), (ie_id), (oui), (tx), __func__)
+void _update_beacon(_adapter *padapter, u8 ie_id, u8 *oui, u8 tx, u8 flags, const char *tag);
+#define update_beacon(adapter, ie_id, oui, tx, flags) _update_beacon((adapter), (ie_id), (oui), (tx), (flags), __func__)
+/*update_beacon - (flags) can set to normal enqueue (0) and RTW_CMDF_WAIT_ACK enqueue. 
+ (flags) = RTW_CMDF_DIRECTLY  is not currently implemented, it will do normal enqueue.*/
 
 void rtw_ap_update_sta_ra_info(_adapter *padapter, struct sta_info *psta);
 
@@ -70,7 +72,8 @@ void stop_ap_mode(_adapter *padapter);
 #endif
 
 void rtw_ap_update_bss_chbw(_adapter *adapter, WLAN_BSSID_EX *bss, u8 ch, u8 bw, u8 offset);
-u8 rtw_ap_chbw_decision(_adapter *adapter, u8 ifbmp, s16 req_ch, s8 req_bw, s8 req_offset, u8 *ch, u8 *bw, u8 *offset, u8 *chbw_allow);
+u8 rtw_ap_chbw_decision(_adapter *adapter, u8 ifbmp, u8 excl_ifbmp
+	, s16 req_ch, s8 req_bw, s8 req_offset, u8 *ch, u8 *bw, u8 *offset, u8 *chbw_allow);
 
 #ifdef CONFIG_AUTO_AP_MODE
 void rtw_auto_ap_rx_msg_dump(_adapter *padapter, union recv_frame *precv_frame, u8 *ehdr_pos);
@@ -95,7 +98,7 @@ void rtw_process_public_act_bsscoex(_adapter *padapter, u8 *pframe, uint frame_l
 #ifdef CONFIG_80211N_HT
 int rtw_ht_operation_update(_adapter *padapter);
 #endif /* CONFIG_80211N_HT */
-u8 rtw_ap_sta_linking_state_check(_adapter *adapter);
+u8 rtw_ap_sta_states_check(_adapter *adapter);
 
 #ifdef CONFIG_FW_HANDLE_TXBCN
 #define rtw_ap_get_nums(adapter)	(adapter_to_dvobj(adapter)->nr_ap_if)

@@ -1575,7 +1575,7 @@ u32	rtw_aes_encrypt(_adapter *padapter, u8 *pxmitframe)
 	pframe = ((struct xmit_frame *)pxmitframe)->buf_addr + hw_hdr_offset;
 
 	/* 4 start to encrypt each fragment */
-	if ((pattrib->encrypt == _AES_)) {
+	if (pattrib->encrypt == _AES_) {
 		/*
 				if(pattrib->psta)
 				{
@@ -1930,7 +1930,7 @@ u32	rtw_aes_decrypt(_adapter *padapter, u8 *precvframe)
 	u32	res = _SUCCESS;
 	pframe = (unsigned char *)((union recv_frame *)precvframe)->u.hdr.rx_data;
 	/* 4 start to encrypt each fragment */
-	if ((prxattrib->encrypt == _AES_)) {
+	if (prxattrib->encrypt == _AES_) {
 
 		stainfo = rtw_get_stainfo(&padapter->stapriv , &prxattrib->ta[0]);
 		if (stainfo != NULL) {
@@ -2133,7 +2133,7 @@ BIP_exit:
 #ifndef PLATFORM_FREEBSD
 #if defined(CONFIG_TDLS)
 /* compress 512-bits */
-static int sha256_compress(struct rtw_sha256_state *md, unsigned char *buf)
+static int sha256_compress(struct _sha256_state *md, unsigned char *buf)
 {
 	u32 S[8], W[64], t0, t1;
 	u32 t;
@@ -2181,7 +2181,7 @@ static int sha256_compress(struct rtw_sha256_state *md, unsigned char *buf)
 }
 
 /* Initialize the hash state */
-static void rtw_sha256_init(struct rtw_sha256_state *md)
+static void _sha256_init(struct _sha256_state *md)
 {
 	md->curlen = 0;
 	md->length = 0;
@@ -2202,7 +2202,7 @@ static void rtw_sha256_init(struct rtw_sha256_state *md)
    @param inlen  The length of the data (octets)
    @return CRYPT_OK if successful
 */
-static int sha256_process(struct rtw_sha256_state *md, unsigned char *in,
+static int sha256_process(struct _sha256_state *md, unsigned char *in,
 			  unsigned long inlen)
 {
 	unsigned long n;
@@ -2243,7 +2243,7 @@ static int sha256_process(struct rtw_sha256_state *md, unsigned char *in,
    @param out [out] The destination of the hash (32 bytes)
    @return CRYPT_OK if successful
 */
-static int sha256_done(struct rtw_sha256_state *md, unsigned char *out)
+static int sha256_done(struct _sha256_state *md, unsigned char *out)
 {
 	int i;
 
@@ -2293,10 +2293,10 @@ static int sha256_done(struct rtw_sha256_state *md, unsigned char *out)
 static int sha256_vector(size_t num_elem, u8 *addr[], size_t *len,
 			 u8 *mac)
 {
-	struct rtw_sha256_state ctx;
+	struct _sha256_state ctx;
 	size_t i;
 
-	rtw_sha256_init(&ctx);
+	_sha256_init(&ctx);
 	for (i = 0; i < num_elem; i++)
 		if (sha256_process(&ctx, addr[i], len[i]))
 			return -1;
@@ -3083,7 +3083,7 @@ int aes_siv_decrypt(const u8 *key, const u8 *iv_crypt, size_t iv_c_len,
 #endif /* CONFIG_RTW_MESH_AEK */
 
 #ifdef CONFIG_TDLS
-void wpa_tdls_generate_tpk(_adapter *padapter, PVOID sta)
+void wpa_tdls_generate_tpk(_adapter *padapter, void *sta)
 {
 	struct sta_info *psta = (struct sta_info *)sta;
 	struct mlme_priv	*pmlmepriv = &padapter->mlmepriv;

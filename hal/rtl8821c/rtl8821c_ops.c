@@ -20,7 +20,7 @@
 	#include <rtw_sreset.h>
 #endif /* DBG_CONFIG_ERROR_DETECT */
 #include <hal_data.h>		/* PHAL_DATA_TYPE, GET_HAL_DATA() */
-#include <hal_com.h>		/* rtw_hal_config_rftype(), dump_chip_info() and etc. */
+#include <hal_com.h>		/* dump_chip_info() and etc. */
 #include "../hal_halmac.h"	/* GET_RX_DESC_XXX_8821C() */
 #include "rtl8821c.h"
 #ifdef CONFIG_PCI_HCI
@@ -69,8 +69,6 @@ static void read_chip_version(PADAPTER adapter)
 	hal->MultiFunc |= ((value32 & BIT_BT_FUNC_EN_8821C) ? RT_MULTI_FUNC_BT : 0);
 	hal->PolarityCtl = ((value32 & BIT_WL_HWPDN_SL_8821C) ? RT_POLARITY_HIGH_ACT : RT_POLARITY_LOW_ACT);
 
-	rtw_hal_config_rftype(adapter);
-
 	dump_chip_info(hal->version_id);
 }
 
@@ -110,10 +108,8 @@ static void Hal_EfuseParseEEPROMVer(PADAPTER adapter, u8 *map, u8 mapvalid)
 static void Hal_EfuseParseTxPowerInfo(PADAPTER adapter, u8 *map, u8 mapvalid)
 {
 	PHAL_DATA_TYPE hal = GET_HAL_DATA(adapter);
-	TxPowerInfo24G tbl2G4;
-	TxPowerInfo5G tbl5g;
 
-	hal_load_txpwr_info(adapter, &tbl2G4, &tbl5g, map);
+	hal->txpwr_pg_mode = TXPWR_PG_WITH_PWR_IDX;
 
 	if ((_TRUE == mapvalid) && (map[EEPROM_RF_BOARD_OPTION_8821C] != 0xFF))
 		hal->EEPROMRegulatory = map[EEPROM_RF_BOARD_OPTION_8821C] & 0x7; /* bit0~2 */
@@ -145,7 +141,7 @@ static void Hal_EfuseParseBTCoexistInfo(PADAPTER adapter, u8 *map, u8 mapvalid)
 	if ((mapvalid == _TRUE) && (map[EEPROM_RF_BOARD_OPTION_8821C] != 0xFF)) {
 
 		tmp_u32 = rtw_read32(adapter, REG_WL_BT_PWR_CTRL_8821C);
-		/* 0xc1[7:5] = 0x01 */
+		/* 0xc1[7:5] = 0x01 (Combo card) */
 		if ((((map[EEPROM_RF_BOARD_OPTION_8821C] & 0xe0) >> 5) == 0x01) && (tmp_u32 & BIT_BT_FUNC_EN_8821C))
 			hal->EEPROMBluetoothCoexist = _TRUE;
 		else
@@ -157,8 +153,10 @@ static void Hal_EfuseParseBTCoexistInfo(PADAPTER adapter, u8 *map, u8 mapvalid)
 
 	setting = map[EEPROM_RF_BT_SETTING_8821C];
 	if ((_TRUE == mapvalid) && (setting != 0xFF)) {
-		/*Bit[0]: Total antenna number
-			0: 2-Antenna / 1: 1-Antenna	*/
+		/* Bit[0]: Total antenna number
+		 * 0: 2-Antenna (WL BT not share Ant, concurrent mode)
+		 * 1: 1-Antenna (WL BT share Ant, TDMA mode)
+		 */
 		hal->EEPROMBluetoothAntNum = setting & BIT(0);
 		/*
 		 * Bit[6]: One-Ant structure use Ant2(aux.) path or Ant1(main) path
@@ -171,7 +169,6 @@ static void Hal_EfuseParseBTCoexistInfo(PADAPTER adapter, u8 *map, u8 mapvalid)
 		hal->ant_path = RF_PATH_A;
 	}
 
-exit:
 	RTW_INFO("EEPROM %s BT-coex, ant_num=%d\n",
 		 hal->EEPROMBluetoothCoexist == _TRUE ? "Enable" : "Disable",
 		 hal->EEPROMBluetoothAntNum == Ant_x2 ? 2 : 1);
@@ -226,7 +223,7 @@ static void Hal_EfuseParseAntennaDiversity(PADAPTER adapter, u8 *map, u8 mapvali
 	struct registry_priv *registry_par = &adapter->registrypriv;
 
 
-	if (hal->EEPROMBluetoothAntNum == Ant_x1)
+	if (hal->EEPROMBluetoothCoexist == _TRUE && hal->EEPROMBluetoothAntNum == Ant_x1)
 		hal->AntDivCfg = 0;
 	else {
 		if (registry_par->antdiv_cfg == 2)/* 0:OFF , 1:ON, 2:By EFUSE */
@@ -237,7 +234,7 @@ static void Hal_EfuseParseAntennaDiversity(PADAPTER adapter, u8 *map, u8 mapvali
 	/*hal->TRxAntDivType = S0S1_TRX_HW_ANTDIV;*/
 	hal->with_extenal_ant_switch = ((map[EEPROM_RF_BT_SETTING_8821C] & BIT7) >> 7);
 
-	RTW_INFO("%s:EEPROM AntDivCfg=%d, AntDivType=%d, extenal_ant_switch:%d\n",
+	RTW_INFO("%s:EEPROM AntDivCfg=%d, AntDivType=%d, external_ant_switch:%d\n",
 		 __func__, hal->AntDivCfg, hal->TRxAntDivType, hal->with_extenal_ant_switch);
 #endif /* CONFIG_ANTENNA_DIVERSITY */
 }
@@ -526,7 +523,6 @@ u8 rtl8821c_read_efuse(PADAPTER adapter)
 	/* set coex. ant info once efuse parsing is done */
 	rtw_btcoex_set_ant_info(adapter);
 
-#ifdef CONFIG_RTW_MAC_HIDDEN_RPT
 	if (hal_read_mac_hidden_rpt(adapter) != _SUCCESS)
 		goto exit;
 	{
@@ -538,7 +534,7 @@ u8 rtl8821c_read_efuse(PADAPTER adapter)
 			rtw_btcoex_wifionly_AntInfoSetting(adapter);
 		}
 	}
-#endif
+
 	rtw_phydm_read_efuse(adapter);
 
 	ret = _SUCCESS;
@@ -616,14 +612,11 @@ static void xmit_status_check(PADAPTER p)
 			else {
 				diff_time = rtw_get_passing_time_ms(psrtpriv->last_tx_complete_time);
 				if (diff_time > 4000) {
-					u32 ability = 0;
-
-					ability = rtw_phydm_ability_get(p);
 
 					RTW_INFO("%s tx hang %s\n", __FUNCTION__,
-						(ability & ODM_BB_ADAPTIVITY) ? "ODM_BB_ADAPTIVITY" : "");
+						(rtw_odm_adaptivity_needed(p)) ? "ODM_BB_ADAPTIVITY" : "");
 
-					if (!(ability & ODM_BB_ADAPTIVITY)) {
+					if (!rtw_odm_adaptivity_needed(p)) {
 						psrtpriv->self_dect_tx_cnt++;
 						psrtpriv->self_dect_case = 1;
 						rtw_hal_sreset_reset(p);
@@ -642,6 +635,7 @@ static void xmit_status_check(PADAPTER p)
 	}
 }
 
+#ifdef CONFIG_USB_HCI
 static void check_rx_count(PADAPTER p)
 {
 	PHAL_DATA_TYPE hal = GET_HAL_DATA(p);
@@ -674,6 +668,7 @@ exit:
 		rtw_hal_sreset_reset(p);
 	}
 }
+#endif/*#ifdef CONFIG_USB_HCI*/
 
 static void linked_status_check(PADAPTER p)
 {
@@ -903,7 +898,7 @@ static void hw_var_set_monitor(PADAPTER Adapter, u8 *val)
 		   | BIT_AB_8821C  | BIT_APWRMGT_8821C
 		   | BIT_APP_PHYSTS_8821C;
 
-	#ifdef CONFIG_RX_PACKET_APPEND_FCS
+	#if defined(CONFIG_RX_PACKET_APPEND_FCS) && !defined(CONFIG_CUSTOMER_ALIBABA_GENERAL)
 	/* Append FCS */
 	rcr_bits |= BIT_APP_FCS_8821C;
 	#endif
@@ -917,6 +912,8 @@ static void hw_var_set_monitor(PADAPTER Adapter, u8 *val)
 	rtw_hal_set_hwreg(Adapter, HW_VAR_RCR, (u8 *)&rcr_bits);
 
 	/* Receive all data frames */
+	rtw_write16(Adapter, REG_RXFLTMAP0_8821C, 0xFFFF);
+	rtw_write16(Adapter, REG_RXFLTMAP1_8821C, 0xFFFF);
 	rtw_write16(Adapter, REG_RXFLTMAP2_8821C, 0xFFFF);
 
 	#if 0
@@ -1209,76 +1206,6 @@ static void rtl8821c_ap_port_switch(_adapter *adapter, u8 mode)
 
 }
 #endif
-
-static void hw_var_set_basic_rate(PADAPTER adapter, u8 *ratetbl)
-{
-#define RATE_1M		BIT(0)
-#define RATE_2M		BIT(1)
-#define RATE_5_5M	BIT(2)
-#define RATE_11M	BIT(3)
-#define RATE_6M		BIT(4)
-#define RATE_9M		BIT(5)
-#define RATE_12M	BIT(6)
-#define RATE_18M	BIT(7)
-#define RATE_24M	BIT(8)
-#define RATE_36M	BIT(9)
-#define RATE_48M	BIT(10)
-#define RATE_54M	BIT(11)
-#define RATE_MCS0	BIT(12)
-#define RATE_MCS1	BIT(13)
-#define RATE_MCS2	BIT(14)
-#define RATE_MCS3	BIT(15)
-#define RATE_MCS4	BIT(16)
-#define RATE_MCS5	BIT(17)
-#define RATE_MCS6	BIT(18)
-#define RATE_MCS7	BIT(19)
-
-#define RATES_CCK	(RATE_11M | RATE_5_5M | RATE_2M | RATE_1M)
-#define RATES_OFDM	(RATE_54M | RATE_48M | RATE_36M | RATE_24M | RATE_18M | RATE_12M | RATE_9M | RATE_6M)
-
-	struct mlme_ext_info *mlmext_info = &adapter->mlmeextpriv.mlmext_info;
-	PHAL_DATA_TYPE hal = GET_HAL_DATA(adapter);
-	u16 input_b = 0, masked = 0, ioted = 0, BrateCfg = 0;
-	u16 rrsr_2g_force_mask = RATES_CCK;
-	u16 rrsr_2g_allow_mask = RATE_24M | RATE_12M | RATE_6M | RATES_CCK;
-	u16 rrsr_5g_force_mask = RATE_6M;
-	u16 rrsr_5g_allow_mask = RATES_OFDM;
-	u32 val32;
-
-	HalSetBrateCfg(adapter, ratetbl, &BrateCfg);
-	input_b = BrateCfg;
-
-	/* apply force and allow mask */
-	if (hal->current_band_type == BAND_ON_2_4G) {
-		BrateCfg |= rrsr_2g_force_mask;
-		BrateCfg &= rrsr_2g_allow_mask;
-	} else {
-		BrateCfg |= rrsr_5g_force_mask;
-		BrateCfg &= rrsr_5g_allow_mask;
-	}
-
-	masked = BrateCfg;
-
-	/* IOT consideration */
-	if (mlmext_info->assoc_AP_vendor == HT_IOT_PEER_CISCO) {
-		/* if peer is cisco and didn't use ofdm rate, we enable 6M ack */
-		if ((BrateCfg & (RATE_24M | RATE_12M | RATE_6M)) == 0)
-			BrateCfg |= RATE_6M;
-	}
-
-	ioted = BrateCfg;
-
-	hal->BasicRateSet = BrateCfg;
-
-	RTW_INFO("[HW_VAR_BASIC_RATE] %#x->%#x->%#x\n", input_b, masked, ioted);
-
-	/* Set RRSR rate table. */
-	val32 = rtw_read32(adapter, REG_RRSR_8821C);
-	val32 &= ~(BIT_MASK_RRSC_BITMAP << BIT_SHIFT_RRSC_BITMAP);
-	val32 |= BIT_RRSC_BITMAP(BrateCfg);
-	val32 = rtw_write32(adapter, REG_RRSR_8821C, val32);
-}
-
 static void hw_var_hw_port_cfg(_adapter *adapter, u8 enable)
 {
 	if (enable)
@@ -1381,9 +1308,6 @@ static void hw_var_set_mlme_sitesurvey(PADAPTER adapter, u8 enable)
 
 		rtw_hal_rcr_set_chk_bssid(adapter, MLME_SCAN_ENTER);
 
-		/* Save orignal RRSR setting. */
-		hal->RegRRSR = rtw_read16(adapter, REG_RRSR_8821C);
-
 		if (rtw_mi_get_ap_num(adapter) || rtw_mi_get_mesh_num(adapter))
 			StopTxBeacon(adapter);
 	} else {
@@ -1396,9 +1320,6 @@ static void hw_var_set_mlme_sitesurvey(PADAPTER adapter, u8 enable)
 			rtw_write16(adapter, REG_RXFLTMAP2_8821C, 0xFFFF);
 
 		rtw_hal_rcr_set_chk_bssid(adapter, MLME_SCAN_DONE);
-
-		/* Restore orignal RRSR setting. */
-		rtw_write16(adapter, REG_RRSR_8821C, hal->RegRRSR);
 
 		if (rtw_mi_get_ap_num(adapter) || rtw_mi_get_mesh_num(adapter)) {
 			ResumeTxBeacon(adapter);
@@ -1586,29 +1507,6 @@ static void hw_var_set_bcn_valid(PADAPTER adapter)
 	rtw_write8(adapter, REG_FIFOPAGE_CTRL_2_8821C + 1, val8);
 }
 
-static void hw_var_set_cam_empty_entry(PADAPTER adapter, u8 ucIndex)
-{
-	u8 i;
-	u32 ulCommand = 0;
-	u32 ulContent = 0;
-	u32 ulEncAlgo = CAM_AES;
-
-	for (i = 0; i < CAM_CONTENT_COUNT; i++) {
-		/* filled id in CAM config 2 byte */
-		if (i == 0)
-			ulContent |= (ucIndex & 0x03) | ((u16)(ulEncAlgo) << 2);
-		else
-			ulContent = 0;
-
-		/* polling bit, and No Write enable, and address */
-		ulCommand = CAM_CONTENT_COUNT * ucIndex + i;
-		ulCommand |= BIT_SECCAM_POLLING_8821C | BIT_SECCAM_WE_8821C;
-		/* write content 0 is equall to mark invalid */
-		rtw_write32(adapter, REG_CAMWRITE_8821C, ulContent);
-		rtw_write32(adapter, REG_CAMCMD_8821C, ulCommand);
-	}
-}
-
 static void hw_var_set_ack_preamble(PADAPTER adapter, u8 bShortPreamble)
 {
 	u8 val8 = 0;
@@ -1771,7 +1669,7 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 			break;
 	*/
 	case HW_VAR_BASIC_RATE:
-		hw_var_set_basic_rate(adapter, val);
+		rtw_var_set_basic_rate(adapter, val);
 		break;
 
 	case HW_VAR_TXPAUSE:
@@ -1796,31 +1694,12 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		if (hal->EEPROMBluetoothCoexist)
 			rtw_btcoex_ScanNotify(adapter, *val ? _TRUE : _FALSE);
 		else
-			rtw_btcoex_wifionly_scan_notify(adapter);
-#else /* !CONFIG_BT_COEXIST */
-		rtw_btcoex_wifionly_scan_notify(adapter);
 #endif /* CONFIG_BT_COEXIST */
-
+		rtw_btcoex_wifionly_scan_notify(adapter);
 		break;
 
 	case HW_VAR_MLME_JOIN:
 		hw_var_set_mlme_join(adapter, *val);
-
-#ifdef CONFIG_BT_COEXIST
-		if (hal->EEPROMBluetoothCoexist) {
-			switch (*val) {
-			case 0:
-				/* Notify coex. mechanism before join */
-				rtw_btcoex_ConnectNotify(adapter, _TRUE);
-				break;
-			case 1:
-			case 2:
-				/* Notify coex. mechanism after join, whether successful or failed */
-				rtw_btcoex_ConnectNotify(adapter, _FALSE);
-				break;
-			}
-		}
-#endif /* CONFIG_BT_COEXIST */
 		break;
 
 	case HW_VAR_SLOT_TIME:
@@ -1853,13 +1732,6 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 
 	case HW_VAR_BCN_VALID:
 		hw_var_set_bcn_valid(adapter);
-		break;
-	/*
-		case HW_VAR_RF_TYPE:
-			break;
-	*/
-	case HW_VAR_CAM_EMPTY_ENTRY:
-		hw_var_set_cam_empty_entry(adapter, *val);
 		break;
 
 	case HW_VAR_CAM_INVALID_ALL:
@@ -1928,10 +1800,7 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		if (check_fwstate(&adapter->mlmepriv, WIFI_AP_STATE) == _TRUE)
 			rtl8821c_download_BTCoex_AP_mode_rsvd_page(adapter);
 		#endif
-		break;		/*
-			case HW_VAR_FWLPS_RF_ON:
-				break;
-		*/
+		break;
 #ifdef CONFIG_P2P
 	case HW_VAR_H2C_FW_P2P_PS_OFFLOAD:
 		#ifdef CONFIG_FW_MULTI_PORT_SUPPORT
@@ -2175,8 +2044,6 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 #endif
 
 	/*
-		case HW_VAR_SET_REQ_FW_PS:
-		case HW_VAR_FW_PS_STATE:
 		case HW_VAR_SOUNDING_RATE:
 		case HW_VAR_SOUNDING_STATUS:
 		case HW_VAR_SOUNDING_FW_NDPA:
@@ -2196,6 +2063,39 @@ u8 rtl8821c_sethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		rtl8821c_phy_bf_set_gid_table(adapter, (struct beamformer_entry*)val);
 		break;
 #endif
+	case HW_VAR_FREECNT:
+
+		val8 = *((u8*)val);
+
+		if (val8 == 0) {
+			/* disable free run counter set 0x577[3]=0 */
+			rtw_write8(adapter, REG_MISC_CTRL,
+				rtw_read8(adapter, REG_MISC_CTRL)&(~BIT_EN_FREECNT));
+
+			/* reset FREE_RUN_COUNTER set 0x553[5]=1 */
+			val8 = rtw_read8(adapter, REG_DUAL_TSF_RST);
+			val8 |=  BIT_FREECNT_RST;
+			rtw_write8(adapter, REG_DUAL_TSF_RST, val8);
+
+		} else if (val8 == 1){
+
+			/* enable free run counter */
+
+			/* disable first set 0x577[3]=0 */
+			rtw_write8(adapter, REG_MISC_CTRL,
+				rtw_read8(adapter, REG_MISC_CTRL)&(~BIT_EN_FREECNT));
+
+			/* reset FREE_RUN_COUNTER set 0x553[5]=1 */
+			val8 = rtw_read8(adapter, REG_DUAL_TSF_RST);
+			val8 |=  BIT_FREECNT_RST;
+			rtw_write8(adapter, REG_DUAL_TSF_RST, val8);
+
+			/* enable free run counter 0x577[3]=1 */
+			rtw_write8(adapter, REG_MISC_CTRL,
+				rtw_read8(adapter, REG_MISC_CTRL)|BIT_EN_FREECNT);
+		}
+		break;
+
 	default:
 		ret = SetHwReg(adapter, variable, val);
 		break;
@@ -2397,8 +2297,6 @@ void rtl8821c_gethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		*val = hw_var_get_bcn_valid(adapter);
 		break;
 	/*
-		case HW_VAR_RF_TYPE:
-		case HW_VAR_CAM_EMPTY_ENTRY:
 		case HW_VAR_CAM_INVALID_ALL:
 	*/
 	case HW_VAR_AC_PARAM_VO:
@@ -2490,8 +2388,6 @@ void rtl8821c_gethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		case HW_VAR_WIRELESS_MODE:
 		case HW_VAR_USB_MODE:
 		case HW_VAR_DO_IQK:
-		case HW_VAR_SET_REQ_FW_PS:
-		case HW_VAR_FW_PS_STATE:
 		case HW_VAR_SOUNDING_ENTER:
 		case HW_VAR_SOUNDING_LEAVE:
 		case HW_VAR_SOUNDING_RATE:
@@ -2500,6 +2396,11 @@ void rtl8821c_gethwreg(PADAPTER adapter, u8 variable, u8 *val)
 		case HW_VAR_SOUNDING_CLK:
 			break;
 	*/
+	case HW_VAR_FW_PS_STATE:
+		/* driver read REG_SYS_CFG5 - BIT_LPS_STATUS REG_1070[3] to get hw ps state */
+		*((u16 *)val) = rtw_read8(adapter, REG_SYS_CFG5);
+		break;
+
 	case HW_VAR_DUMP_MAC_QUEUE_INFO:
 		dump_mac_qinfo(val, adapter);
 		break;
@@ -2563,38 +2464,6 @@ u8 rtl8821c_sethaldefvar(PADAPTER adapter, HAL_DEF_VARIABLE variable, void *pval
 		case HW_VAR_BEST_AMPDU_DENSITY:
 			break;
 	*/
-	case HW_VAR_FREECNT:
-
-		val8 = *((u8*)pval);
-
-		if (val8 == 0) {
-			/* disable free run counter set 0x577[3]=0 */
-			rtw_write8(adapter, REG_MISC_CTRL,
-				rtw_read8(adapter, REG_MISC_CTRL)&(~BIT_EN_FREECNT));
-
-			/* reset FREE_RUN_COUNTER set 0x553[5]=1 */
-			val8 = rtw_read8(adapter, REG_DUAL_TSF_RST);
-			val8 |=  BIT_FREECNT_RST;
-			rtw_write8(adapter, REG_DUAL_TSF_RST, val8);
-
-		} else if (val8 == 1){
-
-			/* enable free run counter */
-
-			/* disable first set 0x577[3]=0 */
-			rtw_write8(adapter, REG_MISC_CTRL,
-				rtw_read8(adapter, REG_MISC_CTRL)&(~BIT_EN_FREECNT));
-
-			/* reset FREE_RUN_COUNTER set 0x553[5]=1 */
-			val8 = rtw_read8(adapter, REG_DUAL_TSF_RST);
-			val8 |=  BIT_FREECNT_RST;
-			rtw_write8(adapter, REG_DUAL_TSF_RST, val8);
-
-			/* enable free run counter 0x577[3]=1 */
-			rtw_write8(adapter, REG_MISC_CTRL,
-				rtw_read8(adapter, REG_MISC_CTRL)|BIT_EN_FREECNT);
-		}
-		break;
 
 	default:
 		bResult = SetHalDefVar(adapter, variable, pval);
@@ -2687,7 +2556,7 @@ u8 rtl8821c_gethaldefvar(PADAPTER adapter, HAL_DEF_VARIABLE variable, void *pval
 		break;
 
 	case HAL_DEF_TX_STBC:
-		*(u8 *)pval = ((hal->phy_spec.stbc_cap >> 8) & 0xFF) ? _TRUE : _FALSE;
+		*(u8 *)pval = (((hal->phy_spec.stbc_cap >> 8) & 0xFF) && hal->max_tx_cnt > 1) ? _TRUE : _FALSE;
 		break;
 
 	/* support 1RX for STBC */
@@ -3182,12 +3051,16 @@ static void fill_default_txdesc(struct xmit_frame *pxmitframe, u8 *pbuf)
 			/* HW will ignore this setting if the transmission rate is legacy OFDM.*/
 			if (pmlmeinfo->preamble_mode == PREAMBLE_SHORT)
 				SET_TX_DESC_DATA_SHORT_8821C(pbuf, 1);
+#ifdef CONFIG_IP_R_MONITOR
+			if((pattrib->ether_type == ETH_P_ARP) &&
+				(IsSupportedTxOFDM(adapter->registrypriv.wireless_mode))) 
+				SET_TX_DESC_DATARATE_8821C(pbuf, MRateToHwRate(IEEE80211_OFDM_RATE_6MB));
+			 else
+#endif/*CONFIG_IP_R_MONITOR*/
+				SET_TX_DESC_DATARATE_8821C(pbuf, MRateToHwRate(pmlmeext->tx_rate));
 
-			SET_TX_DESC_DATARATE_8821C(pbuf, MRateToHwRate(pmlmeext->tx_rate));
-
-
-			/*RTW_INFO(FUNC_ADPT_FMT ": SP Packet(0x%04X) rate=0x%x\n",
-				FUNC_ADPT_ARG(adapter), pattrib->ether_type, MRateToHwRate(pmlmeext->tx_rate));*/
+			RTW_INFO(FUNC_ADPT_FMT ": SP Packet(0x%04X) rate=0x%x SeqNum = %d\n",
+				FUNC_ADPT_ARG(adapter), pattrib->ether_type, MRateToHwRate(pmlmeext->tx_rate), pattrib->seqnum);
 		}
 #ifdef CONFIG_TDLS
 #ifdef CONFIG_XMIT_ACK
@@ -3601,10 +3474,8 @@ void rtl8821c_set_hal_ops(PADAPTER adapter)
 	ops_func->set_chnl_bw_handler = rtl8821c_set_channel_bw;
 
 	ops_func->set_tx_power_level_handler = rtl8821c_set_tx_power_level;
-	ops_func->get_tx_power_level_handler = rtl8821c_get_tx_power_level;
-
 	ops_func->set_tx_power_index_handler = rtl8821c_set_tx_power_index;
-	ops_func->get_tx_power_index_handler = rtl8821c_get_tx_power_index;
+	ops_func->get_tx_power_index_handler = hal_com_get_txpwr_idx;
 
 	ops_func->hal_dm_watchdog = rtl8821c_phy_haldm_watchdog;
 

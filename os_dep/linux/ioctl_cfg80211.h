@@ -168,8 +168,14 @@ struct rtw_wdev_priv {
 	bool block_scan;
 	bool power_mgmt;
 
-	/* report mgmt_frame registered */
-	u16 report_mgmt;
+	/**
+	 * mgmt_regs: bitmap of management frame subtypes registered for the
+	 * 	given interface
+	 * mcast_mgmt_regs: mcast RX is needed on this interface for these
+	 * 	subtypes
+	 */
+	u32 mgmt_regs;
+	/* u32 mcast_mgmt_regs; */
 
 	u8 is_mgmt_tx;
 	u16 mgmt_tx_cookie;
@@ -191,6 +197,20 @@ struct rtw_wdev_priv {
         u8 rssi_monitor_enable;
 #endif
 
+};
+
+enum external_auth_action {
+	EXTERNAL_AUTH_START,
+	EXTERNAL_AUTH_ABORT,
+};
+
+struct rtw_external_auth_params {
+	enum external_auth_action action;
+	u8 bssid[ETH_ALEN]__aligned(2);
+	struct cfg80211_ssid ssid;
+	unsigned int key_mgmt_suite;
+	u16 status;
+	u8 pmkid[PMKID_LEN];
 };
 
 bool rtw_cfg80211_is_connect_requested(_adapter *adapter);
@@ -246,8 +266,13 @@ struct rtw_wiphy_data {
 #define FUNC_WIPHY_FMT "%s("WIPHY_FMT")"
 #define FUNC_WIPHY_ARG(wiphy) __func__, WIPHY_ARG(wiphy)
 
-#define SET_CFG80211_REPORT_MGMT(w, t, v) (w->report_mgmt |= (v ? BIT(t >> 4) : 0))
-#define GET_CFG80211_REPORT_MGMT(w, t) ((w->report_mgmt & BIT(t >> 4)) > 0)
+#define SET_CFG80211_MGMT_REGS(w, t) (w |= BIT(t >> 4))
+#define CLR_CFG80211_MGMT_REGS(w, t) (w &= (~BIT(t >> 4)))
+#define GET_CFG80211_MGMT_REGS(w, t) ((w & BIT(t >> 4)) > 0)
+
+#define SET_CFG80211_REPORT_MGMT(w, t) (SET_CFG80211_MGMT_REGS(w->mgmt_regs, t))
+#define CLR_CFG80211_REPORT_MGMT(w, t) (CLR_CFG80211_MGMT_REGS(w->mgmt_regs, t))
+#define GET_CFG80211_REPORT_MGMT(w, t) (GET_CFG80211_MGMT_REGS(w->mgmt_regs, t))
 
 struct wiphy *rtw_wiphy_alloc(_adapter *padapter, struct device *dev);
 void rtw_wiphy_free(struct wiphy *wiphy);
@@ -320,6 +345,10 @@ void rtw_cfg80211_rx_action(_adapter *adapter, union recv_frame *rframe, const c
 void rtw_cfg80211_rx_mframe(_adapter *adapter, union recv_frame *rframe, const char *msg);
 void rtw_cfg80211_rx_probe_request(_adapter *padapter, union recv_frame *rframe);
 
+void rtw_cfg80211_external_auth_request(_adapter *padapter, union recv_frame *rframe);
+void rtw_cfg80211_external_auth_status(struct wiphy *wiphy, struct net_device *dev,
+	struct rtw_external_auth_params *params);
+
 int rtw_cfg80211_set_mgnt_wpsp2pie(struct net_device *net, char *buf, int len, int type);
 
 bool rtw_cfg80211_pwr_mgmt(_adapter *adapter);
@@ -383,12 +412,14 @@ void rtw_cfg80211_deinit_rfkill(struct wiphy *wiphy);
 #endif
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0))
-#define rtw_cfg80211_notify_new_peer_candidate(wdev, addr, ie, ie_len, gfp) cfg80211_notify_new_peer_candidate(wdev_to_ndev(wdev), addr, ie, ie_len, gfp)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0))
+#define rtw_cfg80211_notify_new_peer_candidate(wdev, addr, ie, ie_len, sig_dbm, gfp) cfg80211_notify_new_peer_candidate(wdev_to_ndev(wdev), addr, ie, ie_len, sig_dbm, gfp)
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0))
+#define rtw_cfg80211_notify_new_peer_candidate(wdev, addr, ie, ie_len, sig_dbm, gfp) cfg80211_notify_new_peer_candidate(wdev_to_ndev(wdev), addr, ie, ie_len, gfp)
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
-u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset, u8 ht);
+u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset, u8 ht, bool started);
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0))

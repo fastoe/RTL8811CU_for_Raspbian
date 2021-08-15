@@ -458,14 +458,11 @@ typedef struct {
 // Max number of tx power levels. The actual number vary per device and is specified by |num_tx_levels|
 #define RADIO_STAT_MAX_TX_LEVELS 256
 
-/* radio statistics */
+/* Internal radio statistics structure in the driver */
 typedef struct {
    wifi_radio radio;                      // wifi radio (if multiple radio supported)
    u32 on_time;                           // msecs the radio is awake (32 bits number accruing over time)
    u32 tx_time;                           // msecs the radio is transmitting (32 bits number accruing over time)
-   u32 num_tx_levels;                     // number of radio transmit power levels
-   u32* tx_time_per_levels;               // pointer to an array of radio transmit per power levels in
-                                          // msecs accured over time
    u32 rx_time;                           // msecs the radio is in active receive (32 bits number accruing over time)
    u32 on_time_scan;                      // msecs the radio is awake due to all scan (32 bits number accruing over time)
    u32 on_time_nbd;                       // msecs the radio is awake due to NAN (32 bits number accruing over time)
@@ -475,7 +472,7 @@ typedef struct {
    u32 on_time_hs20;                      // msecs the radio is awake due to HS2.0 scans and GAS exchange (32 bits number accruing over time)
    u32 num_channels;                      // number of channels
    wifi_channel_stat channels[];          // channel statistics
-} wifi_radio_stat;
+} wifi_radio_stat_internal;
 
 /**
  * Packet statistics reporting by firmware is performed on MPDU basi (i.e. counters increase by 1 for each MPDU)
@@ -590,13 +587,6 @@ typedef struct {
                                         // packet size < mpdu_size_threshold => short
    u32 aggressive_statistics_gathering; // set for field debug mode. Driver should collect all statistics regardless of performance impact.
 } wifi_link_layer_params;
-
-/* callback for reporting link layer stats */
-typedef struct {
-  void (*on_link_stats_results) (wifi_request_id id, wifi_iface_stat *iface_stat,
-         int num_radios, wifi_radio_stat *radio_stat);
-} wifi_stats_result_handler;
-
 
 #define RSSI_MONITOR_EVT_VERSION   1
 typedef struct {

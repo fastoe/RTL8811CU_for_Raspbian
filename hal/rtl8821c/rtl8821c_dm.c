@@ -32,11 +32,6 @@
 /* ************************************************************
  * Global var
  * ************************************************************ */
-static void dm_CheckProtection(PADAPTER adapter)
-{
-}
-	
-	
 #ifdef CONFIG_SUPPORT_HW_WPS_PBC
 static void dm_CheckPbcGPIO(PADAPTER adapter)
 {
@@ -163,7 +158,7 @@ static void init_phydm_cominfo(PADAPTER adapter)
 	else if (IS_CHIP_VENDOR_SMIC(hal->version_id))
 		fab_ver = ODM_UMC + 1;
 	else
-		RTW_INFO("%s: unknown fab_ver=%d !!\n",
+		RTW_INFO("%s: unknown Fv=%d !!\n",
 			 __FUNCTION__, GET_CVID_MANUFACTUER(hal->version_id));
 
 	if (IS_A_CUT(hal->version_id))
@@ -185,10 +180,10 @@ static void init_phydm_cominfo(PADAPTER adapter)
 	else if (IS_K_CUT(hal->version_id))
 		cut_ver = ODM_CUT_K;
 	else
-		RTW_INFO("%s: unknown cut_ver=%d !!\n",
+		RTW_INFO("%s: unknown Cv=%d !!\n",
 			 __FUNCTION__, GET_CVID_CUT_VERSION(hal->version_id));
 
-	RTW_INFO("%s: fab_ver=%d cut_ver=%d\n", __FUNCTION__, fab_ver, cut_ver);
+	RTW_INFO("%s: Fv=%d Cv=%d\n", __FUNCTION__, fab_ver, cut_ver);
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_FAB_VER, fab_ver);
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_CUT_VER, cut_ver);
 
@@ -218,12 +213,18 @@ void rtl8821c_phy_haldm_watchdog(PADAPTER Adapter)
 {
 	BOOLEAN bFwCurrentInPSMode = _FALSE;
 	u8 bFwPSAwake = _TRUE;
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(Adapter);
+	u8 lps_changed = _FALSE;
+	u8 in_lps = _FALSE;
+	PADAPTER current_lps_iface = NULL, iface = NULL;
+	struct dvobj_priv *dvobj = adapter_to_dvobj(Adapter);
+	u8 i = 0;
 
 	if (!rtw_is_hw_init_completed(Adapter))
 		goto skip_dm;
 
 #ifdef CONFIG_LPS
-	bFwCurrentInPSMode = adapter_to_pwrctl(Adapter)->bFwCurrentInPSMode;
+	bFwCurrentInPSMode = pwrpriv->bFwCurrentInPSMode;
 	rtw_hal_get_hwreg(Adapter, HW_VAR_FWLPS_RF_ON, &bFwPSAwake);
 #endif
 
@@ -238,15 +239,25 @@ void rtl8821c_phy_haldm_watchdog(PADAPTER Adapter)
 		&& ((!bFwCurrentInPSMode) && bFwPSAwake)) {
 
 		/* Dynamically switch RTS/CTS protection.*/
-		/*dm_CheckProtection(Adapter);*/
 	}
 
-#ifdef CONFIG_DISABLE_ODM
-	goto skip_dm;
-#endif
-	rtw_phydm_watchdog(Adapter);
+#ifdef CONFIG_LPS
+	if (pwrpriv->bLeisurePs && bFwCurrentInPSMode && pwrpriv->pwr_mode != PS_MODE_ACTIVE
+#ifdef CONFIG_WMMPS_STA	
+		&& !rtw_is_wmmps_mode(Adapter)
+#endif /* CONFIG_WMMPS_STA */
+	) {
+		for (i = 0; i < dvobj->iface_nums; i++) {
+			iface = dvobj->padapters[i];
+			if (pwrpriv->current_lps_hw_port_id == rtw_hal_get_port(iface))
+				current_lps_iface = iface;
+		}
 
-skip_dm:
+		lps_changed = _TRUE;
+		in_lps = _TRUE;
+		LPS_Leave(current_lps_iface, LPS_CTRL_PHYDM);
+	}
+#endif
 
 #ifdef CONFIG_BEAMFORMING
 #ifdef RTW_BEAMFORMING_VERSION_2
@@ -254,6 +265,19 @@ skip_dm:
 			check_fwstate(&Adapter->mlmepriv, _FW_LINKED))
 		rtw_hal_beamforming_config_csirate(Adapter);
 #endif
+#endif
+
+#ifdef CONFIG_DISABLE_ODM
+	goto skip_dm;
+#endif
+
+	rtw_phydm_watchdog(Adapter, in_lps);
+
+skip_dm:
+
+#ifdef CONFIG_LPS
+	if (lps_changed)
+		LPS_Enter(current_lps_iface, LPS_CTRL_PHYDM);
 #endif
 #ifdef CONFIG_SUPPORT_HW_WPS_PBC
 	/* Check GPIO to determine current Pbc status.*/

@@ -120,7 +120,6 @@ void rtl8821cu_initswleds(PADAPTER padapter)
 	InitLed(padapter, &(ledpriv->SwLed1), LED_PIN_LED1);
 	InitLed(padapter, &(ledpriv->SwLed2), LED_PIN_LED2);
 
-	rtw_halmac_led_cfg(adapter_to_dvobj(padapter), enable, mode);
 }
 
 /*
@@ -137,6 +136,5 @@ void rtl8821cu_deinitswleds(PADAPTER padapter)
 	DeInitLed(&(ledpriv->SwLed1));
 	DeInitLed(&(ledpriv->SwLed2));
 
-	rtw_halmac_led_cfg(adapter_to_dvobj(padapter), enable, mode);
 }
 #endif

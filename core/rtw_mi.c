@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2007 - 2019 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -754,12 +754,6 @@ void rtw_mi_buddy_intf_stop(_adapter *adapter)
 }
 
 #ifdef CONFIG_NEW_NETDEV_HDL
-static u8 _rtw_mi_hal_iface_init(_adapter *padapter, void *data)
-{
-	if (rtw_hal_iface_init(padapter) == _SUCCESS)
-		return _TRUE;
-	return _FALSE;
-}
 u8 rtw_mi_hal_iface_init(_adapter *padapter)
 {
 	int i;
@@ -832,7 +826,7 @@ static u8 _rtw_mi_beacon_update(_adapter *padapter, void *data)
 	if (!MLME_IS_STA(padapter)
 	    && check_fwstate(&padapter->mlmepriv, _FW_LINKED) == _TRUE) {
 		RTW_INFO(ADPT_FMT" - update_beacon\n", ADPT_ARG(padapter));
-		update_beacon(padapter, 0xFF, NULL, _TRUE);
+		update_beacon(padapter, 0xFF, NULL, _TRUE, 0);
 	}
 	return _TRUE;
 }
@@ -885,37 +879,16 @@ void rtw_mi_buddy_xmit_tasklet_schedule(_adapter *padapter)
 
 u8 _rtw_mi_busy_traffic_check(_adapter *padapter, void *data)
 {
-	u32 passtime;
-	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
-	bool check_sc_interval = *(bool *)data;
-
-	if (pmlmepriv->LinkDetectInfo.bBusyTraffic == _TRUE) {
-		if (check_sc_interval) {
-			/* Miracast can't do AP scan*/
-			passtime = rtw_get_passing_time_ms(pmlmepriv->lastscantime);
-			pmlmepriv->lastscantime = rtw_get_current_time();
-			if (passtime > BUSY_TRAFFIC_SCAN_DENY_PERIOD) {
-				RTW_INFO(ADPT_FMT" bBusyTraffic == _TRUE\n", ADPT_ARG(padapter));
-				return _TRUE;
-			}
-		} else
-			return _TRUE;
-	}
-
-	return _FALSE;
+	return padapter->mlmepriv.LinkDetectInfo.bBusyTraffic;
 }
 
-u8 rtw_mi_busy_traffic_check(_adapter *padapter, bool check_sc_interval)
+u8 rtw_mi_busy_traffic_check(_adapter *padapter)
 {
-	bool in_data = check_sc_interval;
-
-	return _rtw_mi_process(padapter, _FALSE, &in_data, _rtw_mi_busy_traffic_check);
+	return _rtw_mi_process(padapter, _FALSE, NULL, _rtw_mi_busy_traffic_check);
 }
-u8 rtw_mi_buddy_busy_traffic_check(_adapter *padapter, bool check_sc_interval)
+u8 rtw_mi_buddy_busy_traffic_check(_adapter *padapter)
 {
-	bool in_data = check_sc_interval;
-
-	return _rtw_mi_process(padapter, _TRUE, &in_data, _rtw_mi_busy_traffic_check);
+	return _rtw_mi_process(padapter, _TRUE, NULL, _rtw_mi_busy_traffic_check);
 }
 static u8 _rtw_mi_check_mlmeinfo_state(_adapter *padapter, void *data)
 {
@@ -1178,6 +1151,29 @@ u8 rtw_mi_sreset_adapter_hdl(_adapter *padapter, u8 bstart)
 
 	return _rtw_mi_process(padapter, _FALSE, &in_data, _rtw_mi_sreset_adapter_hdl);
 }
+
+#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)
+void rtw_mi_ap_info_restore(_adapter *adapter)
+{
+	int i;
+	_adapter *iface;
+	struct mlme_priv *pmlmepriv;
+	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
+
+	for (i = 0; i < dvobj->iface_nums; i++) {
+		iface = dvobj->padapters[i];
+		if (iface) {
+			pmlmepriv = &iface->mlmepriv;
+
+			if (MLME_IS_AP(iface) || MLME_IS_MESH(iface)) {
+				RTW_INFO(FUNC_ADPT_FMT" %s\n", FUNC_ADPT_ARG(iface), MLME_IS_AP(iface) ? "AP" : "MESH");
+				rtw_iface_bcmc_sec_cam_map_restore(iface);
+			}
+		}
+	}
+}
+#endif /*#if defined(DBG_CONFIG_ERROR_RESET) && defined(CONFIG_CONCURRENT_MODE)*/
+
 u8 rtw_mi_buddy_sreset_adapter_hdl(_adapter *padapter, u8 bstart)
 {
 	u8 in_data = bstart;
@@ -1191,7 +1187,7 @@ static u8 _rtw_mi_tx_beacon_hdl(_adapter *adapter, void *data)
 	) {
 		adapter->mlmepriv.update_bcn = _TRUE;
 #ifndef CONFIG_INTERRUPT_BASED_TXBCN
-#if defined(CONFIG_USB_HCI) || defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
+#if defined(CONFIG_USB_HCI) || defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI) || defined(CONFIG_PCI_BCN_POLLING)
 		tx_beacon_hdl(adapter, NULL);
 #endif
 #endif
@@ -1213,7 +1209,7 @@ static u8 _rtw_mi_set_tx_beacon_cmd(_adapter *adapter, void *data)
 
 	if (MLME_IS_AP(adapter) || MLME_IS_MESH(adapter)) {
 		if (pmlmepriv->update_bcn == _TRUE)
-			set_tx_beacon_cmd(adapter);
+			set_tx_beacon_cmd(adapter, 0);
 	}
 	return _TRUE;
 }
@@ -1267,14 +1263,15 @@ u8 rtw_mi_buddy_stay_in_p2p_mode(_adapter *padapter)
 _adapter *rtw_get_iface_by_id(_adapter *padapter, u8 iface_id)
 {
 	_adapter *iface = NULL;
-	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
+	struct dvobj_priv *dvobj;
 
 	if ((padapter == NULL) || (iface_id >= CONFIG_IFACE_NUMBER)) {
 		rtw_warn_on(1);
 		return iface;
 	}
 
-	return  dvobj->padapters[iface_id];
+	dvobj = adapter_to_dvobj(padapter);
+	return dvobj->padapters[iface_id];
 }
 
 _adapter *rtw_get_iface_by_macddr(_adapter *padapter, const u8 *mac_addr)
@@ -1466,6 +1463,25 @@ _adapter *rtw_mi_get_ap_adapter(_adapter *padapter)
 	return iface;
 }
 #endif
+
+u8 rtw_mi_get_ld_sta_ifbmp(_adapter *adapter)
+{
+	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
+	int i;
+	_adapter *iface = NULL;
+	u8 ifbmp = 0;
+
+	for (i = 0; i < dvobj->iface_nums; i++) {
+		iface = dvobj->padapters[i];
+		if (!iface)
+			continue;
+
+		if (MLME_IS_STA(iface) && MLME_IS_ASOC(iface))
+			ifbmp |= BIT(i);
+	}
+
+	return ifbmp;
+}
 
 u8 rtw_mi_get_ap_mesh_ifbmp(_adapter *adapter)
 {
