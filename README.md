@@ -1,4 +1,4 @@
-# Realtek 8811CU driver for Raspbian
+# Realtek 8811CU driver for Raspberry Pi OS
 
 A few known wireless cards that use this driver include:
 * [Fastoe AC650 USB Wi-Fi Adapter](https://amzn.to/2KR1Lxi)
