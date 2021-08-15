@@ -2,10 +2,17 @@
 
 A few known wireless cards that use this driver include:
 * [Fastoe AC650 USB Wi-Fi Adapter](https://amzn.to/2KR1Lxi)
+* TOTOLINK A650UA v3
+* D-Link - DWA-171C
+* BrosTrend AC5L
+* EDUP EP-AC1651
+* EDUP EP-AC1635
+* Cudy WU700
 
-Driver for 802.11ac USB adapter with RTL8811CU or RTL8821CU chipset, only STA/Monitor mode is supported, no AP mode.
+Driver for 802.11ac USB adapter with RTL8811CU chipset, only STA/Monitor mode is supported, no AP mode.
 
 Currently tested with Linux RaspberryPi 5.4.51-v7l+/4.19.118-v7+/4.19.97-v7+ on:
+- Raspberry Pi 400
 - Raspberry Pi 4 B
 - Raspberry Pi Zero W
 - Raspberry Pi Zero v1.3 (5.10.17-v7+)
@@ -14,7 +21,22 @@ Currently tested with Linux RaspberryPi 5.4.51-v7l+/4.19.118-v7+/4.19.97-v7+ on:
 
 ### Manual installation
 
-To build, you have to retrieve source and run `make`, if via Git, do following:
+To build, you have to retrieve source and run `make`, do following:
+
+For Raspberry Pi OS 5.10 kernel, please clone the v5.8.1 branch:
+
+```bash
+sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+git clone -b v5.8.1 https://github.com/fastoe/RTL8811CU_for_Raspbian
+cd RTL8811CU_for_Raspbian
+make
+sudo make install
+sudo modprobe 8821cu
+sudo reboot
+```
+
+For Raspberry Pi OS 5.4 kernel:
+
 ```bash
 sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
 git clone https://github.com/fastoe/RTL8811CU_for_Raspbian
