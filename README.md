@@ -58,7 +58,7 @@ To build, you have to retrieve source and run `make`, do following:
 ```
 pi@raspberrypi:~/RTL8812BU_for_Raspbian $ make
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/RTL8812BU_for_Raspbian  modules
-make[1]: *** /lib/modules/5.4.51-v7+/build: No such file or directory.  Stop.
+make[1]: *** /lib/modules/5.x.x-v7+/build: No such file or directory.  Stop.
 make: *** [Makefile:2284: modules] Error 2
 ```
 please run the `rpi-source` command to install the kernel headers for kernel:
