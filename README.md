@@ -1,31 +1,60 @@
-# Realtek 8811CU driver for Raspbian
+# Realtek 8811CU driver for Raspberry Pi OS
+
+Driver for 802.11ac USB adapter with RTL8811CU chipset, only STA/Monitor mode is supported, no AP mode.
 
 A few known wireless cards that use this driver include:
 * [Fastoe AC650 USB Wi-Fi Adapter](https://amzn.to/2KR1Lxi)
+* TOTOLINK A650UA v3
+* D-Link - DWA-171C
+* BrosTrend AC5L
+* EDUP EP-AC1651
+* EDUP EP-AC1635
+* Cudy WU700
 
-Driver for 802.11ac USB adapter with RTL8811CU or RTL8821CU chipset, only STA/Monitor mode is supported, no AP mode.
+### Tested with Raspberry Pi OS (32-bit):
+- [Kernel 5.10.17](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-05-28/)
+- [Kernel 5.4.83](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-01-12/)
+- [Kernel 5.4.79](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2020-12-04/)
+- [Kernel 4.19.118](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2020-05-28/)
+- Kernel 4.19.50
 
-Currently tested with Linux RaspberryPi 5.4.51-v7l+/4.19.118-v7+/4.19.97-v7+ on:
-- Raspberry Pi 4 B
+### Tested Raspberry Pi Devices:
+- Raspberry Pi 400
+- Raspberry Pi 4 Model B 2G
+- Raspberry Pi 4 Model B 4G
+- Raspberry Pi 4 Model B 8G
 - Raspberry Pi Zero W
-- Raspberry Pi Zero v1.3 (5.10.17-v7+)
+- Raspberry Pi Zero v1.3
 - Raspberry Pi 3 B+
 - Raspberry Pi 2 B
 
-### Manual installation
+### Installation Information
 
-To build, you have to retrieve source and run `make`, if via Git, do following:
-```bash
-sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
-git clone https://github.com/fastoe/RTL8811CU_for_Raspbian
-cd RTL8811CU_for_Raspbian
-make
-sudo make install
-sudo modprobe 8821cu
-sudo reboot
-```
+To build, you have to retrieve source and run `make`, do following:
 
-If fails to compile like `/lib/modules/5.x.x-v7+/build: No such file or directory.  Stop`:
+- For Raspberry Pi OS 5.10 kernel, clone the v5.8.1 branch:
+  ```bash
+  sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+  git clone -b v5.8.1 https://github.com/fastoe/RTL8811CU_for_Raspbian
+  cd RTL8811CU_for_Raspbian
+  make
+  sudo make install
+  sudo modprobe 8821cu
+  sudo reboot
+  ```
+
+- For Raspberry Pi OS 5.4 or earlier kernel:
+  ```bash
+  sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+  git clone https://github.com/fastoe/RTL8811CU_for_Raspbian
+  cd RTL8811CU_for_Raspbian
+  make
+  sudo make install
+  sudo modprobe 8821cu
+  sudo reboot
+  ```
+
+### If fails to compile like `/lib/modules/5.x.x-v7+/build: No such file or directory.  Stop`:
 ```
 pi@raspberrypi:~/RTL8812BU_for_Raspbian $ make
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/RTL8812BU_for_Raspbian  modules
@@ -40,7 +69,7 @@ rpi-source
 ```
 then, re-make again.
 
-If fails to compile like this:
+### If fails to compile like this:
 ```
 make ARCH=arm CROSS_COMPILE= -C /lib/modules/5.4.51-v7+/build M=/home/pi/rtl8821CU  modules
 make[1]: Entering directory '/home/pi/linux-f2f7e4b23d8788e96f81a7522b2f703e51c53e70'
@@ -52,13 +81,14 @@ make[1]: Leaving directory '/home/pi/linux-f2f7e4b23d8788e96f81a7522b2f703e51c53
 make: *** [Makefile:2214: modules] Error 2
 ```
 please run the following command:
+- for AArch32 (32-bit)
 ```
-# for AArch32
 sudo cp /lib/modules/$(uname -r)/build/arch/arm/Makefile /lib/modules/$(uname -r)/build/arch/arm/Makefile.$(date +%Y%m%d%H%M)
 sudo sed -i 's/-msoft-float//' /lib/modules/$(uname -r)/build/arch/arm/Makefile
 sudo ln -s /lib/modules/$(uname -r)/build/arch/arm /lib/modules/$(uname -r)/build/arch/armv7l
-
-# for AArch64
+```
+- for AArch64 (64-bit)
+```
 sudo cp /lib/modules/$(uname -r)/build/arch/arm64/Makefile /lib/modules/$(uname -r)/build/arch/arm64/Makefile.$(date +%Y%m%d%H%M)
 sudo sed -i 's/-mgeneral-regs-only//' /lib/modules/$(uname -r)/build/arch/arm64/Makefile
 ```
