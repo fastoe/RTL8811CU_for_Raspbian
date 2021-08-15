@@ -11,7 +11,7 @@ A few known wireless cards that use this driver include:
 * EDUP EP-AC1635
 * Cudy WU700
 
-## Tested with Raspberry Pi OS (32 bit):
+### Tested with Raspberry Pi OS (32 bit):
 - Kernel 5.10.17
 - Kernel 5.4.83
 - Kernel 5.4.79
@@ -20,7 +20,7 @@ A few known wireless cards that use this driver include:
 - Kernel 4.19.97
 - Kernel 4.19.50
 
-## Tested Raspberry Pi Devices:
+### Tested Raspberry Pi Devices:
 - Raspberry Pi 400
 - Raspberry Pi 4 Model B 2G
 - Raspberry Pi 4 Model B 4G
