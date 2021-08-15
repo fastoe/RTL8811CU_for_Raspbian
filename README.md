@@ -28,11 +28,11 @@ A few known wireless cards that use this driver include:
 - Raspberry Pi 3 B+
 - Raspberry Pi 2 B
 
-### Manual installation
+### Installation Information
 
 To build, you have to retrieve source and run `make`, do following:
 
-For Raspberry Pi OS 5.10 kernel, please clone the v5.8.1 branch:
+- For Raspberry Pi OS 5.10 kernel, clone the v5.8.1 branch:
 
 ```bash
 sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
@@ -44,7 +44,7 @@ sudo modprobe 8821cu
 sudo reboot
 ```
 
-For Raspberry Pi OS 5.4 kernel:
+- For Raspberry Pi OS 5.4 or earlier kernel:
 
 ```bash
 sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
