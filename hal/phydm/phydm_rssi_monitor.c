@@ -23,7 +23,7 @@
  *
  *****************************************************************************/
 
-/*************************************************************
+/*@************************************************************
  * include files
  ************************************************************/
 
@@ -32,7 +32,6 @@
 
 #ifdef PHYDM_SUPPORT_RSSI_MONITOR
 
-#ifdef PHYDM_3RD_REFORM_RSSI_MONOTOR
 void phydm_rssi_monitor_h2c(void *dm_void, u8 macid)
 {
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
@@ -66,10 +65,8 @@ void phydm_rssi_monitor_h2c(void *dm_void, u8 macid)
 	bf = &sta->bf_info;
 
 	if ((bf->ht_beamform_cap & BEAMFORMING_HT_BEAMFORMEE_ENABLE) ||
-	    (bf->vht_beamform_cap & BEAMFORMING_VHT_BEAMFORMEE_ENABLE)) {
+	    (bf->vht_beamform_cap & BEAMFORMING_VHT_BEAMFORMEE_ENABLE))
 		bf_en = 1;
-		/**/
-	}
 	#endif
 
 	PHYDM_DBG(dm, DBG_RSSI_MNTR, "RA_th_ofst=(( %s%d ))\n",
@@ -88,7 +85,7 @@ void phydm_rssi_monitor_h2c(void *dm_void, u8 macid)
 	PHYDM_DBG(dm, DBG_RSSI_MNTR, "PHYDM h2c[0x42]=0x%x %x %x %x %x %x %x\n",
 		  h2c[6], h2c[5], h2c[4], h2c[3], h2c[2], h2c[1], h2c[0]);
 
-	#if (RTL8188E_SUPPORT == 1)
+	#if (RTL8188E_SUPPORT)
 	if (dm->support_ic_type == ODM_RTL8188E)
 		odm_ra_set_rssi_8188e(dm, sta->mac_id, sta->rssi_stat.rssi);
 	else
@@ -126,8 +123,8 @@ void phydm_calculate_rssi_min_max(void *dm_void)
 				dm->rssi_max_macid = i;
 			}
 
-			/*[Send RSSI to FW]*/
-			if (sta->ra_info.disable_ra == false)
+			/*@[Send RSSI to FW]*/
+			if (!sta->ra_info.disable_ra)
 				phydm_rssi_monitor_h2c(dm, i);
 
 			if (sta_cnt == dm->number_linked_client)
@@ -139,7 +136,6 @@ void phydm_calculate_rssi_min_max(void *dm_void)
 	dm->rssi_max = (u8)rssi_max_tmp;
 	dm->rssi_min = (u8)rssi_min_tmp;
 }
-#endif
 
 void phydm_rssi_monitor_check(void *dm_void)
 {
@@ -148,7 +144,7 @@ void phydm_rssi_monitor_check(void *dm_void)
 	if (!(dm->support_ability & ODM_BB_RSSI_MONITOR))
 		return;
 
-	/*for AP watchdog period = 1 sec*/
+	/*@for AP watchdog period = 1 sec*/
 	if ((dm->phydm_sys_up_time % 2) == 1)
 		return;
 
@@ -165,7 +161,6 @@ void phydm_rssi_monitor_init(void *dm_void)
 	struct dm_struct *dm = (struct dm_struct *)dm_void;
 	struct ra_table *ra_tab = &dm->dm_ra_table;
 
-	ra_tab->firstconnect = false;
 	dm->pre_rssi_min = 0;
 	dm->rssi_max = 0;
 	dm->rssi_min = 0;

@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2017 Realtek Corporation.
+ * Copyright(c) 2015 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -12,28 +12,26 @@
  * more details.
  *
  *****************************************************************************/
-/*#define CONFIG_DISABLE_ODM*/
-/*#define CONFIG_NO_FW*/
+#define CONFIG_SINGLE_IMG
+/* #define CONFIG_DISABLE_ODM */
 
 /*
  * Public  General Config
  */
 #define AUTOCONF_INCLUDED
-#define RTL871X_MODULE_NAME "8821CU"
-#define DRV_NAME "rtl8821cu"
+#define RTL871X_MODULE_NAME "88x2BU"
+#define DRV_NAME "rtl88x2bu"
 
-/* Set CONFIG_RTL8821C from Makefile */
-#ifndef CONFIG_RTL8821C
-#define CONFIG_RTL8821C
+/* Set CONFIG_RTL8822B from Makefile */
+#ifndef CONFIG_RTL8822B
+#define CONFIG_RTL8822B
 #endif
-#define CONFIG_USB_HCI
-#define PLATFORM_LINUX
+#define CONFIG_USB_HCI	1
+#define PLATFORM_LINUX	1
 
 /*
  * Wi-Fi Functions Config
  */
-
-#define CONFIG_IEEE80211_BAND_5GHZ
 
 #define CONFIG_80211N_HT
 #define CONFIG_80211AC_VHT
@@ -43,8 +41,8 @@
 	#endif
 #endif
 
-#ifdef CONFIG_80211N_HT
-	/* #define CONFIG_BEAMFORMING */
+#ifdef CONFIG_80211AC_VHT
+	#define CONFIG_BEAMFORMING
 #endif
 
 /* set CONFIG_IOCTL_CFG80211 from Makefile */
@@ -68,8 +66,11 @@
  */
 /* #define CONFIG_H2CLBK */
 
-#define RTW_HALMAC		/* Use HALMAC architecture, necessary for 8821C */
-#define CONFIG_EMBEDDED_FWIMG
+#define RTW_HALMAC		/* Use HALMAC architecture, necessary for 8822B */
+#define CONFIG_EMBEDDED_FWIMG	1
+#if (CONFIG_EMBEDDED_FWIMG==1)
+	#define	LOAD_FW_HEADER_FROM_DRIVER
+#endif
 /* #define CONFIG_FILE_FWIMG */
 
 #define CONFIG_XMIT_ACK
@@ -77,51 +78,56 @@
 	#define CONFIG_ACTIVE_KEEP_ALIVE_CHECK
 #endif
 
-#define CONFIG_RECV_REORDERING_CTRL
+#define CONFIG_RECV_REORDERING_CTRL	1
 
-#define CONFIG_DFS
+/* #define CONFIG_SUPPORT_USB_INT */
+#ifdef CONFIG_SUPPORT_USB_INT
+	/* #define CONFIG_USB_INTERRUPT_IN_PIPE  1 */
+#endif /* CONFIG_SUPPORT_USB_INT */
 
- /* #define CONFIG_SUPPORT_USB_INT */
- #ifdef CONFIG_SUPPORT_USB_INT
-/* #define CONFIG_USB_INTERRUPT_IN_PIPE*/
-#endif
 #ifdef CONFIG_POWER_SAVING
-#define CONFIG_IPS
-#ifdef CONFIG_IPS
-/* #define CONFIG_IPS_LEVEL_2*/ /*enable this to set default IPS mode to IPS_LEVEL_2*/
-#define CONFIG_IPS_CHECK_IN_WD /* Do IPS Check in WatchDog.	*/
-#endif
-/* #define SUPPORT_HW_RFOFF_DETECTED*/
-
-#define CONFIG_LPS
-#if defined(CONFIG_LPS)
-/* #define CONFIG_LPS_LCLK*/
-#endif
-
-#ifdef CONFIG_LPS_LCLK
-	#ifdef CONFIG_POWER_SAVING
-		/* #define CONFIG_XMIT_THREAD_MODE */
+	#define CONFIG_IPS	1
+	#ifdef CONFIG_IPS
+	/* #define CONFIG_IPS_LEVEL_2 1*/ /*enable this to set default IPS mode to IPS_LEVEL_2*/
+	#define CONFIG_IPS_CHECK_IN_WD /* Do IPS Check in WatchDog.	*/
+	/* #define CONFIG_FWLPS_IN_IPS */
 	#endif
-	#ifndef CONFIG_SUPPORT_USB_INT
-		#define LPS_RPWM_WAIT_MS 300
-		#define CONFIG_DETECT_CPWM_BY_POLLING
-	#endif /* !CONFIG_SUPPORT_USB_INT */
-	/* #define DBG_CHECK_FW_PS_STATE */
-#endif
+	/* #define SUPPORT_HW_RFOFF_DETECTED	1 */
+
+	#define CONFIG_LPS	1
+	#if defined(CONFIG_LPS)
+		#define CONFIG_LPS_LCLK	1
+	#endif
+
+	#ifdef CONFIG_LPS_LCLK
+		#ifdef CONFIG_POWER_SAVING
+			/* #define CONFIG_XMIT_THREAD_MODE */
+		#endif /* CONFIG_POWER_SAVING */
+		#ifndef CONFIG_SUPPORT_USB_INT
+			#define LPS_RPWM_WAIT_MS 300
+			#define CONFIG_DETECT_CPWM_BY_POLLING
+		#endif /* !CONFIG_SUPPORT_USB_INT */
+		/* #define DBG_CHECK_FW_PS_STATE */
+	#endif /* CONFIG_LPS_LCLK */
 
 	#ifdef CONFIG_LPS
 		#define CONFIG_WMMPS_STA 1
 	#endif /* CONFIG_LPS */
 #endif /*CONFIG_POWER_SAVING*/
-/* before link */
-/* #define CONFIG_ANTENNA_DIVERSITY */
+	/* before link */
+	/* #define CONFIG_ANTENNA_DIVERSITY */
 
-/* after link */
-#ifdef CONFIG_ANTENNA_DIVERSITY
-#define CONFIG_HW_ANTENNA_DIVERSITY
-#endif
+	/* after link */
+	#ifdef CONFIG_ANTENNA_DIVERSITY
+	#define CONFIG_HW_ANTENNA_DIVERSITY
+	#endif
 
-#define CONFIG_AP_MODE
+
+/*#else*/	/* CONFIG_MP_INCLUDED */
+
+/*#endif*/	/* CONFIG_MP_INCLUDED */
+
+#define CONFIG_AP_MODE	1
 #ifdef CONFIG_AP_MODE
 	/* #define CONFIG_INTERRUPT_BASED_TXBCN */ /* Tx Beacon when driver BCN_OK ,BCN_ERR interrupt occurs */
 	#if defined(CONFIG_CONCURRENT_MODE) && defined(CONFIG_INTERRUPT_BASED_TXBCN)
@@ -134,12 +140,12 @@
 
 	#define CONFIG_NATIVEAP_MLME
 	#ifndef CONFIG_NATIVEAP_MLME
-		#define CONFIG_HOSTAPD_MLME
+		#define CONFIG_HOSTAPD_MLME	1
 	#endif
-	#define CONFIG_FIND_BEST_CHANNEL
+	#define CONFIG_FIND_BEST_CHANNEL	1
 #endif
 
-#define CONFIG_P2P
+#define CONFIG_P2P	1
 #ifdef CONFIG_P2P
 	/* The CONFIG_WFD is for supporting the Wi-Fi display */
 	#define CONFIG_WFD
@@ -169,16 +175,17 @@
 #endif
 
 
-#define CONFIG_SKB_COPY	/* amsdu */
+#define CONFIG_SKB_COPY	1 /* amsdu */
 
 #define CONFIG_RTW_LED
 #ifdef CONFIG_RTW_LED
-	#define CONFIG_RTW_SW_LED
+//	#define CONFIG_RTW_SW_LED
 	#ifdef CONFIG_RTW_SW_LED
 		/* #define CONFIG_RTW_LED_HANDLED_BY_CMD_THREAD */
 	#endif
 #endif /* CONFIG_RTW_LED */
 
+#define USB_INTERFERENCE_ISSUE /* this should be checked in all usb interface */
 #define CONFIG_GLOBAL_UI_PID
 
 /*#define CONFIG_RTW_80211K*/
@@ -196,27 +203,24 @@
 #endif
 #define RTW_NOTCH_FILTER 0 /* 0:Disable, 1:Enable, */
 
-#define CONFIG_TX_MCAST2UNI		/*Support IP multicast->unicast*/
-/* #define CONFIG_CHECK_AC_LIFETIME 1 */	/* Check packet lifetime of 4 ACs. */
-
 
 /*
  * Interface  Related Config
  */
 
 #ifndef CONFIG_MINIMAL_MEMORY_USAGE
-	#define CONFIG_USB_TX_AGGREGATION
-	#define CONFIG_USB_RX_AGGREGATION
+	#define CONFIG_USB_TX_AGGREGATION	1
+	#define CONFIG_USB_RX_AGGREGATION	1
 #endif
 
-/* #define CONFIG_REDUCE_USB_TX_INT*/ /* Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms. */
-/* #define CONFIG_EASY_REPLACEMENT*/
+/* #define CONFIG_REDUCE_USB_TX_INT	1 */ /* Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms. */
+/* #define CONFIG_EASY_REPLACEMENT	1 */
 
 /*
  * CONFIG_USE_USB_BUFFER_ALLOC_XX uses Linux USB Buffer alloc API and is for Linux platform only now!
  */
-/* #define CONFIG_USE_USB_BUFFER_ALLOC_TX*/	/* Trade-off: For TX path, improve stability on some platforms, but may cause performance degrade on other platforms. */
-/* #define CONFIG_USE_USB_BUFFER_ALLOC_RX*/ /* For RX path */
+/* #define CONFIG_USE_USB_BUFFER_ALLOC_TX 1 */	/* Trade-off: For TX path, improve stability on some platforms, but may cause performance degrade on other platforms. */
+/* #define CONFIG_USE_USB_BUFFER_ALLOC_RX 1	*/ /* For RX path */
 #ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
 
 #else
@@ -236,31 +240,30 @@
 #define CONFIG_USB_VENDOR_REQ_MUTEX
 #define CONFIG_VENDOR_REQ_RETRY
 
-/* #define CONFIG_USB_SUPPORT_ASYNC_VDN_REQ*/
-
-#ifdef CONFIG_WOWLAN
-	#define CONFIG_GTK_OL
-	/* #define CONFIG_ARP_KEEP_ALIVE */
-#endif /* CONFIG_WOWLAN */
-
-#ifdef CONFIG_GPIO_WAKEUP
-	#ifndef WAKEUP_GPIO_IDX
-		#define WAKEUP_GPIO_IDX	6	/* WIFI Chip Side */
-	#endif /* WAKEUP_GPIO_IDX */
-#endif /* CONFIG_GPIO_WAKEUP */
+/* #define CONFIG_USB_SUPPORT_ASYNC_VDN_REQ 1 */
 
 /*
  * HAL  Related Config
  */
-/*#define CONFIG_RX_PACKET_APPEND_FCS*/
+#define RTL8812A_RX_PACKET_INCLUDE_CRC	0
 
-/*#define CONFIG_ADHOC_WORKAROUND_SETTING*/
+#define CONFIG_RX_PACKET_APPEND_FCS
+
+/* #define CONFIG_ONLY_ONE_OUT_EP_TO_LOW	0 */
+
+#define CONFIG_OUT_EP_WIFI_MODE	0
+
+#define ENABLE_USB_DROP_INCORRECT_OUT
+
+#define CONFIG_ADHOC_WORKAROUND_SETTING	1
+
+#define ENABLE_NEW_RFE_TYPE	0
 
 #define DISABLE_BB_RF	0
 
 #ifdef CONFIG_MP_INCLUDED
 	#define MP_DRIVER 1
-	#define CONFIG_MP_IWPRIV_SUPPORT
+	#define CONFIG_MP_IWPRIV_SUPPORT	1
 	/*
 	 #undef CONFIG_USB_TX_AGGREGATION
 	 #undef CONFIG_USB_RX_AGGREGATION
@@ -286,53 +289,55 @@
 
 #ifdef CONFIG_BT_COEXIST
 	/* for ODM and outsrc BT-Coex */
-	#define BT_30_SUPPORT 1
 	#ifndef CONFIG_LPS
-		/* download reserved page to FW */
-		#define CONFIG_LPS
+		#define CONFIG_LPS	/* download reserved page to FW */
 	#endif
-#else /* !CONFIG_BT_COEXIST */
-	#define BT_30_SUPPORT 0
-#endif /* CONFIG_BT_COEXIST */
+#endif /* !CONFIG_BT_COEXIST */
 
 
 
 #ifdef CONFIG_USB_TX_AGGREGATION
-/* #define	CONFIG_TX_EARLY_MODE */
+/* #define CONFIG_TX_EARLY_MODE */
 #endif
+
+#define	RTL8188E_EARLY_MODE_PKT_NUM_10	0
+/*#define CONFIG_CUSTOMER01_SMART_ANTENNA */
 
 /*
  * Debug Related Config
  */
 #define DBG	1
 
-#define CONFIG_PROC_DEBUG
 #define DBG_CONFIG_ERROR_DETECT
 
-/*#define DBG_CONFIG_ERROR_DETECT_INT*/
-/*#define DBG_CONFIG_ERROR_RESET*/
+/* #define CONFIG_DIS_UPHY */
+/*
+#define DBG_CONFIG_ERROR_DETECT_INT
+#define DBG_CONFIG_ERROR_RESET
+
+#define DBG_IO
+#define DBG_DELAY_OS
+#define DBG_MEM_ALLOC
+#define DBG_IOCTL
+
+#define DBG_TX
+#define DBG_XMIT_BUF
+#define DBG_XMIT_BUF_EXT
+#define DBG_TX_DROP_FRAME
+
+#define DBG_RX_DROP_FRAME
+#define DBG_RX_SEQ
+#define DBG_RX_SIGNAL_DISPLAY_PROCESSING
+#define DBG_RX_SIGNAL_DISPLAY_SSID_MONITORED "jeff-ap"
 
 
 
-/*#define DBG_IO*/
-/*#define DBG_DELAY_OS*/
-/*#ifndef DBG_MEM_ALLOC*/
-/*#define DBG_MEM_ALLOC*/
-/*#endif*/
-/*#define DBG_MEMORY_LEAK*/
-/*#define DBG_IOCTL*/
+#define DBG_SHOW_MCUFWDL_BEFORE_51_ENABLE
+#define DBG_ROAMING_TEST
 
-/*#define DBG_TX*/
-/*#define DBG_XMIT_BUF*/
-/*#define DBG_XMIT_BUF_EXT*/
-/*#define DBG_TX_DROP_FRAME*/
+#define DBG_HAL_INIT_PROFILING
 
-/*#define DBG_RX_DROP_FRAME*/
-/*#define DBG_RX_SEQ*/
-/*#define DBG_RX_SIGNAL_DISPLAY_PROCESSING*/
-/*#define DBG_RX_SIGNAL_DISPLAY_SSID_MONITORED "jeff-ap"*/
+#define DBG_MEMORY_LEAK	1
+*/
 
-/*#define DBG_ROAMING_TEST*/
-
-/*#define DBG_HAL_INIT_PROFILING*/
 /*#define DBG_FW_DEBUG_MSG_PKT*/  /* FW use this feature to tx debug broadcast pkt. This pkt include FW debug message*/
