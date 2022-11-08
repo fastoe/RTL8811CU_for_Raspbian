@@ -530,10 +530,9 @@ get_swing_index(
 	u32			bb_swing, table_value;
 
 	if (dm->support_ic_type == ODM_RTL8188E || dm->support_ic_type == ODM_RTL8723B ||
-	    dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type == ODM_RTL8188F ||
-	    dm->support_ic_type == ODM_RTL8703B || dm->support_ic_type == ODM_RTL8723D ||
-	    dm->support_ic_type == ODM_RTL8192F || dm->support_ic_type == ODM_RTL8710B ||
-	    dm->support_ic_type == ODM_RTL8821) {
+	    dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type == ODM_RTL8188F || 
+	    dm->support_ic_type == ODM_RTL8703B || dm->support_ic_type == ODM_RTL8723D || 
+	    dm->support_ic_type == ODM_RTL8192F || dm->support_ic_type == ODM_RTL8710B) {
 		bb_swing = odm_get_bb_reg(dm, REG_OFDM_0_XA_TX_IQ_IMBALANCE, 0xFFC00000);
 
 		for (i = 0; i < OFDM_TABLE_SIZE; i++) {
@@ -588,6 +587,22 @@ get_cck_swing_index(
 	return i;
 }
 
+s8
+get_txagc_default_index(
+	void *dm_void
+)
+{
+	struct dm_struct *dm = (struct dm_struct *)dm_void;
+	s8 tmp;
+
+	if (dm->support_ic_type == ODM_RTL8814B) {
+		tmp = (s8)(odm_get_bb_reg(dm, R_0x18a0, 0x7f) & 0xff);
+		if (tmp & BIT(6))
+			tmp = tmp | 0x80;
+		return tmp;
+	} else
+		return 0;
+}
 
 void
 odm_txpowertracking_thermal_meter_init(
@@ -683,8 +698,7 @@ odm_txpowertracking_thermal_meter_init(
 	if (cali_info->default_bb_swing_index_flag != true) {
 		/*The index of "0 dB" in SwingTable.*/
 		if (dm->support_ic_type == ODM_RTL8188E || dm->support_ic_type == ODM_RTL8723B ||
-		    dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type == ODM_RTL8703B ||
-		    dm->support_ic_type == ODM_RTL8821) {
+		    dm->support_ic_type == ODM_RTL8192E || dm->support_ic_type == ODM_RTL8703B) {
 			cali_info->default_ofdm_index = (default_swing_index >= OFDM_TABLE_SIZE) ? 30 : default_swing_index;
 			cali_info->default_cck_index = (default_cck_swing_index >= CCK_TABLE_SIZE) ? 20 : default_cck_swing_index;
 		} else if (dm->support_ic_type == ODM_RTL8188F) {          /*add by Mingzhi.Guo  2015-03-23*/
@@ -694,16 +708,17 @@ odm_txpowertracking_thermal_meter_init(
 			cali_info->default_ofdm_index = 28;						 	   /*OFDM: -1dB*/
 			cali_info->default_cck_index = 28;							/*CCK:   -6dB*/
 			/* JJ ADD 20161014 */
-		} else if (dm->support_ic_type == ODM_RTL8710B) {
+		} else if (dm->support_ic_type == ODM_RTL8710B) {			
 			cali_info->default_ofdm_index = 28;					/*OFDM: -1dB*/
 			cali_info->default_cck_index = 28;					/*CCK:   -6dB*/
 		/*Winnita add 20170828*/
-		} else if (dm->support_ic_type == ODM_RTL8192F) {
+		} else if (dm->support_ic_type == ODM_RTL8192F) {			
 			cali_info->default_ofdm_index = 30;					/*OFDM: 0dB*/
 			cali_info->default_cck_index = 28;					/*CCK:   -6dB*/
 		} else {
 			cali_info->default_ofdm_index = (default_swing_index >= TXSCALE_TABLE_SIZE) ? 24 : default_swing_index;
 			cali_info->default_cck_index = 24;
+			cali_info->default_txagc_index = get_txagc_default_index(dm);
 		}
 		cali_info->default_bb_swing_index_flag = true;
 	}
@@ -873,7 +888,7 @@ odm_txpowertracking_thermal_meter_check(
 			odm_set_rf_reg(dm, RF_PATH_A, R_0x42, BIT(19), 0x01);
 			odm_set_rf_reg(dm, RF_PATH_A, R_0x42, BIT(19), 0x00);
 			odm_set_rf_reg(dm, RF_PATH_A, R_0x42, BIT(19), 0x01);
-
+			
 			odm_set_rf_reg(dm, RF_PATH_B, R_0x42, BIT(19), 0x01);
 			odm_set_rf_reg(dm, RF_PATH_B, R_0x42, BIT(19), 0x00);
 			odm_set_rf_reg(dm, RF_PATH_B, R_0x42, BIT(19), 0x01);

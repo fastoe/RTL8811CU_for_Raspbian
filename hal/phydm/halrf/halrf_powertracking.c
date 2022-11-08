@@ -170,8 +170,17 @@ void halrf_set_pwr_track(void *dm_void, u8 enable)
 		halrf_do_tssi(dm);
 		halrf_calculate_tssi_codeword(dm);
 		halrf_set_tssi_codeword(dm);
+		
+#if !(RTL8723F_SUPPORT == 1)
 		for (i = 0; i < c.rf_path_count; i++)
 			(*c.odm_tx_pwr_track_set_pwr)(dm, CLEAN_MODE, i, 0);
+#endif
 	}
+
+	if (cali_info->txpowertrack_control == 2 ||
+		cali_info->txpowertrack_control == 3 ||
+		cali_info->txpowertrack_control == 4 ||
+		cali_info->txpowertrack_control == 5)
+		halrf_txgapk_reload_tx_gain(dm);
 }
 

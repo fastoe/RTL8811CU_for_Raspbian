@@ -125,7 +125,7 @@ void halrf_psd(
 	psd->buf_size = 256;
 
 	mode = average >> 16;
-
+	
 	if (mode == 2)
 		average_tmp = 1;
 	else
@@ -257,7 +257,7 @@ void _halrf_psd_iqk_init(struct dm_struct *dm)
 	odm_set_bb_reg(dm, 0x1b1c, 0xfff, 0xd21);
 	odm_set_bb_reg(dm, 0x1b1c, 0xfff00000, 0x821);
 	odm_set_bb_reg(dm, 0x1b28, MASKDWORD, 0x0);
-	odm_set_bb_reg(dm, 0x1bcc, 0x3f, 0x3f);
+	odm_set_bb_reg(dm, 0x1bcc, 0x3f, 0x3f);	
 }
 
 
