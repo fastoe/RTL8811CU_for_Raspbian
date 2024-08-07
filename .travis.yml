@@ -1,6 +1,0 @@
-language: c
-addons:
-  apt:
-    packages:
-    - linux-headers-generic
-script: make KVER=`ls /lib/modules/`

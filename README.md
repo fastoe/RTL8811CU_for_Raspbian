@@ -12,6 +12,7 @@ A few known wireless cards that use this driver include:
 * Cudy WU700
 
 ### Tested with Raspberry Pi OS (32-bit):
+- [Kernel 5.15.61](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2022-09-26/)
 - [Kernel 5.10.17](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-05-28/)
 - [Kernel 5.4.83](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2021-01-12/)
 - [Kernel 5.4.79](https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2020-12-04/)
@@ -31,6 +32,17 @@ A few known wireless cards that use this driver include:
 ### Installation Information
 
 To build, you have to retrieve source and run `make`, do following:
+
+- For Raspberry Pi OS kernel 5.11 or later, please clone the v5.8.7 branch:
+  ```bash
+  sudo apt install -y bc git dkms build-essential raspberrypi-kernel-headers
+  git clone -b v5.8.7 https://github.com/fastoe/RTL8811CU_for_Raspbian
+  cd RTL8811CU_for_Raspbian
+  make
+  sudo make install
+  sudo modprobe 8821cu
+  sudo reboot
+  ```
 
 - For Raspberry Pi OS 5.10 kernel, clone the v5.8.1 branch:
   ```bash
